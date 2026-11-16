@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Riesenrad mit Kamera</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#edf3f6;color:#193747;font:16px system-ui}main{width:min(100%,960px);padding:20px;display:grid;justify-items:center;gap:16px}input{width:min(100%,380px);padding:12px 20px;background:white;color:#193747;border:1px solid #b4c9d4;border-radius:14px;box-shadow:0 4px 15px #16374b12;text-align:center;font:inherit;font-size:1.15rem}input:focus-visible{outline:3px solid #187c93;outline-offset:3px}input[aria-invalid=true]{border-color:#bd4949}svg{width:100%;height:auto;display:block;background:white;border:1px solid #dbe5eb;border-radius:18px;box-shadow:0 10px 32px #16374b0c}@media(max-width:540px){main{padding:12px}}
+
+body{display:block}main{width:100%;height:100dvh;padding:clamp(8px,1.5vw,20px);grid-template-rows:auto minmax(0,1fr);gap:10px}svg{width:100%;height:100%;min-height:0}.point{display:flex;align-items:center;gap:clamp(5px,1vw,14px);white-space:nowrap;font-size:1.3rem;font-weight:650}.point input{width:clamp(70px,18vw,180px);padding:9px 6px}
+</style>
+<main>
+<div class="point" role="group" aria-label="Zielpunkt der Kamera">
+<span aria-hidden="true">P<sub>x</sub> (</span>
+<input id="targetX" aria-label="Erste Koordinate" value="0" spellcheck="false" autocomplete="off">
+<span aria-hidden="true">|</span>
+<input id="targetY" aria-label="Zweite Koordinate" value="0" spellcheck="false" autocomplete="off">
+<span aria-hidden="true">)</span>
+</div>
+<svg id="scene" viewBox="-6.75 -1.5 13.5 3" role="img" aria-label="Automatisch drehender Einheitskreis mit Riesenradgondeln und Kamera in der Mitte">
+<defs><pattern id="grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M0 1V0H1" fill="none" stroke="#e2ecef" stroke-width=".025"/></pattern></defs>
+<rect id="bg" fill="url(#grid)"/>
+<g id="axes"></g>
+
+<g id="wheel"><circle r="1" fill="none" stroke="#90b0c0" stroke-width=".035"/><circle r=".96" fill="none" stroke="#c4d8e0" stroke-width=".016"/></g>
+<g id="cabins"></g>
+<g id="aim"><line id="ray" stroke="#177963" stroke-width=".016" stroke-dasharray=".055 .035"/><circle id="dot" r=".042" fill="#177963" stroke="white" stroke-width=".012"/></g>
+<g id="camera">
+<path d="M-.073-.078H.035L.087-.05V.05L.035.078H-.073Z" fill="#456677" stroke="#193747" stroke-width=".014"/>
+<rect x="-.112" y="-.085" width=".106" height=".17" rx=".023" fill="#193747" stroke="#fff" stroke-width=".013"/>
+<rect x="-.093" y="-.057" width=".059" height=".114" rx=".01" fill="#9bd7d7"/>
+<circle cx="-.023" cy="0" r=".007" fill="#fff"/>
+</g>
+</svg>
+</main>
+<script>
+'use strict';
+const $=s=>document.getElementById(s), ns='http://www.w3.org/2000/svg';
+function el(tag,props,p){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(props))n.setAttribute(k,v);p.append(n);return n}
+const funcs={sin:Math.sin,cos:Math.cos,tan:Math.tan,sqrt:Math.sqrt,abs:Math.abs,exp:Math.exp,ln:Math.log,log:Math.log10};
+function expression(s){
+ const t=s.toLowerCase().replaceAll('π','pi').replaceAll('−','-').match(/\d+(?:[.,]\d+)?|[.,]\d+|[a-z]+|[^\s]/g)||[];
+ let i=0;const eat=v=>t[i]===v?(i++,true):false;
+ function atom(){const k=t[i++];if(k==='('){const a=sum();if(!eat(')'))throw Error();return a}
+ if(k==='x')return x=>x;if(k==='pi')return ()=>Math.PI;if(k==='e')return ()=>Math.E;
+ if(k&&/^\d|^[.,]\d/.test(k)){const n=Number(k.replace(',','.'));return ()=>n}
+ if(Object.hasOwn(funcs,k)&&eat('(')){const a=sum();if(!eat(')'))throw Error();return x=>funcs[k](a(x))}
+ throw Error()}
+ function power(){const a=atom();if(eat('^')){const b=unary();return x=>a(x)**b(x)}return a}
+ function unary(){if(eat('+'))return unary();if(eat('-')){const a=unary();return x=>-a(x)}return power()}
+ function prod(){let a=unary();while(t[i]==='*'||t[i]==='/'){const op=t[i++],l=a,b=unary();a=x=>op==='*'?l(x)*b(x):l(x)/b(x)}return a}
+ function sum(){let a=prod();while(t[i]==='+'||t[i]==='-'){const op=t[i++],l=a,b=prod();a=x=>op==='+'?l(x)+b(x):l(x)-b(x)}return a}
+ const f=sum();if(i!==t.length)throw Error();return f
+}
+
+const scene=$('scene'), wheel=$('wheel'), axes=$('axes'), cabins=[];
+for(let i=0;i<10;i++){
+ const a=i*Math.PI/5,g=el('g',{},$('cabins'));cabins.push(g);const car=el('g',{transform:'scale(.38)'},g);
+ el('line',{x2:Math.cos(a),y2:Math.sin(a),stroke:'#779aa9','stroke-width':'.022'},wheel);
+ el('path',{d:'M-.18 .23L0 0l.18 .23',fill:'none',stroke:'#456677','stroke-width':'.035'},car);
+ el('rect',{x:-.24,y:.22,width:.48,height:.39,rx:.075,fill:i===0?'#cc414a':'#267a92',stroke:'white','stroke-width':'.022'},car);
+ el('rect',{x:-.16,y:.29,width:.32,height:.13,rx:.02,fill:'white',opacity:.78},car)
+}
+let angle=0,fns=[],oldBox='';
+const fields=[$('targetX'),$('targetY')];
+function bounds(p){
+ const x=p?.[0]??0,y=p?.[1]??0;
+ const halfW=Math.ceil(Math.max(6.7,Math.abs(x)+.36)*4)/4,halfH=Math.ceil(Math.max(1.38,Math.abs(y)+.36)*4)/4;
+ const box=[-halfW,-halfH,2*halfW,2*halfH].join(' ');
+ if(box===oldBox)return;oldBox=box;scene.setAttribute('viewBox',box);
+ const [a,b,w,h]=box.split(' ').map(Number);
+ const bg=$('bg');for(const [k,v] of Object.entries({x:a,y:b,width:w,height:h}))bg.setAttribute(k,v);
+ bg.setAttribute('fill',Math.max(w,h)>35?'white':'url(#grid)');axes.replaceChildren();
+ el('path',{d:`M${a} 0H${a+w} M0 ${b}V${b+h}`,stroke:'#93abb5','stroke-width':'.018'},axes);
+ for(const n of [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6]){el('text',{x:n,y:.23,'font-size':.14,'text-anchor':'middle',fill:'#506b78'},axes).textContent=n}
+ for(const n of [-1,1]){el('text',{x:-.10,y:-n+.05,'font-size':.14,'text-anchor':'end',fill:'#506b78'},axes).textContent=n}
+}
+function render(){
+ wheel.setAttribute('transform',`rotate(${-angle*180/Math.PI})`);
+ cabins.forEach((g,i)=>{const a=angle+i*Math.PI/5;g.setAttribute('transform',`translate(${Math.cos(a)} ${-Math.sin(a)})`)});
+ const p=fns.map(f=>f?f(angle):NaN),valid=p.map(n=>Number.isFinite(n)&&Math.abs(n)<=1e6),ok=valid.every(Boolean);
+ $('aim').style.display=ok?'':'none';
+ fields.forEach((field,i)=>field.setAttribute('aria-invalid',String(!valid[i])));
+ bounds(ok?p:null);
+ if(!ok)return;
+ const [x,y]=p;
+ $('ray').setAttribute('x2',x);$('ray').setAttribute('y2',-y);$('dot').setAttribute('cx',x);$('dot').setAttribute('cy',-y);
+ $('camera').setAttribute('transform',`rotate(${Math.atan2(-y,x)*180/Math.PI})`);
+
+}
+function update(){fns=fields.map(field=>{try{return expression(field.value)}catch{return null}});render()}
+fields.forEach(field=>field.addEventListener('input',update));
+update();
+let previous;
+function frame(now){
+ if(previous!==undefined)angle=(angle+Math.min(now-previous,100)*2*Math.PI/18000)%(2*Math.PI);
+ previous=now;render();requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script></html>
