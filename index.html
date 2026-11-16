@@ -8,12 +8,12 @@ body{display:block}main{width:100%;height:100dvh;padding:clamp(8px,1.5vw,20px);g
 <main>
 <div class="point" role="group" aria-label="Zielpunkt der Kamera">
 <span aria-hidden="true">P<sub>x</sub> (</span>
-<input id="targetX" aria-label="Erste Koordinate" value="0" spellcheck="false" autocomplete="off">
+<input id="targetX" aria-label="Erste Koordinate" value="x" spellcheck="false" autocomplete="off">
 <span aria-hidden="true">|</span>
-<input id="targetY" aria-label="Zweite Koordinate" value="0" spellcheck="false" autocomplete="off">
+<input id="targetY" aria-label="Zweite Koordinate" value="sin(x)" spellcheck="false" autocomplete="off">
 <span aria-hidden="true">)</span>
 </div>
-<svg id="scene" viewBox="-6.75 -1.5 13.5 3" role="img" aria-label="Automatisch drehender Einheitskreis mit Riesenradgondeln und Kamera in der Mitte">
+<svg id="scene" viewBox="-1.25 -1.25 2.5 2.5" role="img" aria-label="Automatisch drehender Einheitskreis mit Riesenradgondeln und Kamera in der Mitte">
 <defs><pattern id="grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M0 1V0H1" fill="none" stroke="#e2ecef" stroke-width=".025"/></pattern></defs>
 <rect id="bg" fill="url(#grid)"/>
 <g id="axes"></g>
@@ -61,14 +61,14 @@ let angle=0,fns=[],oldBox='';
 const fields=[$('targetX'),$('targetY')];
 function bounds(p){
  const x=p?.[0]??0,y=p?.[1]??0;
- const halfW=Math.ceil(Math.max(6.7,Math.abs(x)+.36)*4)/4,halfH=Math.ceil(Math.max(1.38,Math.abs(y)+.36)*4)/4;
- const box=[-halfW,-halfH,2*halfW,2*halfH].join(' ');
+ const halfW=Math.max(1.25,Math.abs(x)+.2),halfH=Math.max(1.25,Math.abs(y)+.2);
+ const box=[-halfW,-halfH,2*halfW,2*halfH].map(n=>n.toFixed(3)).join(' ');
  if(box===oldBox)return;oldBox=box;scene.setAttribute('viewBox',box);
  const [a,b,w,h]=box.split(' ').map(Number);
  const bg=$('bg');for(const [k,v] of Object.entries({x:a,y:b,width:w,height:h}))bg.setAttribute(k,v);
  bg.setAttribute('fill',Math.max(w,h)>35?'white':'url(#grid)');axes.replaceChildren();
  el('path',{d:`M${a} 0H${a+w} M0 ${b}V${b+h}`,stroke:'#93abb5','stroke-width':'.018'},axes);
- for(const n of [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6]){el('text',{x:n,y:.23,'font-size':.14,'text-anchor':'middle',fill:'#506b78'},axes).textContent=n}
+ for(const n of [-6,-5,-4,-3,-2,-1,1,2,3,4,5,6]){if(Math.abs(n)>halfW-.1)continue;el('text',{x:n,y:.23,'font-size':.14,'text-anchor':'middle',fill:'#506b78'},axes).textContent=n}
  for(const n of [-1,1]){el('text',{x:-.10,y:-n+.05,'font-size':.14,'text-anchor':'end',fill:'#506b78'},axes).textContent=n}
 }
 function render(){
